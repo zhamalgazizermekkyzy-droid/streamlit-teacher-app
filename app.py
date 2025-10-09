@@ -6,11 +6,35 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from openpyxl import Workbook
 
-# 🎯 Басты тақырып
-st.title("📚 Оқушылардың оқу жетістіктерін талдау")
+# 🌞 Беттің жалпы түрі (фон түсі және стиль)
+st.set_page_config(page_title="Оқу жетістіктерін талдау", page_icon="📚", layout="centered")
+
+# CSS арқылы әдемі дизайн беру
+st.markdown("""
+    <style>
+    body {
+        background: linear-gradient(135deg, #e0f7fa, #ffffff);
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .stApp {
+        background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    }
+    h1 {
+        color: #0078D7 !important;
+        text-align: center;
+    }
+    .css-1v3fvcr, .css-10trblm {
+        color: #0078D7;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 🎯 Тақырып
+st.title("📘 Оқушылардың оқу жетістіктерін талдау")
+st.markdown("### Деректерді талдап, әр оқушыға жеке ұсыныс алыңыз 💡")
 
 # 📂 Файл жүктеу
-uploaded_file = st.file_uploader("Файлды жүктеңіз", type=["csv", "xlsx", "xls", "json", "txt"])
+uploaded_file = st.file_uploader("📂 Файлды жүктеңіз:", type=["csv", "xlsx", "xls", "json", "txt"])
 
 # 📥 Файлды оқу функциясы
 def load_file(uploaded_file):
@@ -28,12 +52,12 @@ def load_file(uploaded_file):
         elif file_type == 'txt':
             df = pd.read_csv(uploaded_file, delimiter="\t", encoding="utf-8", low_memory=False)
         else:
-            st.error("❌ Қолдау көрсетілмейтін файл форматы!")
+            st.error("❌ Бұл файл түрі қолдау таппайды.")
             return None
         return df
     return None
 
-# 📊 Орташа баллды есептеу және ұсыныстар беру
+# 📊 Орташа баллды есептеу және ұсыныс беру
 def analyze_performance(data):
     numeric_data = data.iloc[:, 1:].apply(pd.to_numeric, errors='coerce')
     data['Орташа балл'] = numeric_data.mean(axis=1, skipna=True)
@@ -41,18 +65,18 @@ def analyze_performance(data):
     
     for score in data['Орташа балл']:
         if pd.isna(score):
-            rec = "❓ Мәлімет жоқ"
+            rec = "❓ Мәлімет жеткіліксіз."
         elif score >= 9:
-            rec = "🌟 Керемет нәтиже! Жалғастыра беріңіз!"
+            rec = "🌟 Керемет! Осы қарқынмен жалғастырыңыз!"
         elif score >= 7:
-            rec = "👍 Жақсы! Бірақ одан да жақсартуға болады."
+            rec = "👍 Жақсы нәтиже! Тағы аздап еңбек етсеңіз, үздік боласыз."
         elif score >= 5:
-            rec = "📚 Қосымша дайындалу қажет."
+            rec = "📘 Қосымша дайындалу қажет."
         else:
-            rec = "🚀 Тьюторлық немесе қосымша сабақтарды қарастырыңыз."
+            rec = "🚀 Тьюторлық немесе жеке сабақтарды қарастырыңыз."
         recommendations.append(rec)
     
-    data['Ұсыныстар'] = recommendations
+    data['Ұсыныс'] = recommendations
     return data
 
 # 📥 Excel жүктеу
@@ -60,35 +84,41 @@ def download_excel(df):
     output = io.BytesIO()
     workbook = Workbook()
     sheet = workbook.active
-    for r_idx, row in enumerate(df.itertuples(index=False), start=1):
+    sheet.append(list(df.columns))  # баған атаулары
+    for r_idx, row in enumerate(df.itertuples(index=False), start=2):
         for c_idx, value in enumerate(row, start=1):
             sheet.cell(row=r_idx, column=c_idx, value=value)
     workbook.save(output)
     return output.getvalue()
 
-# 🏁 Егер файл жүктелсе, деректерді өңдеу
+# 🏁 Негізгі логика
 if uploaded_file:
     df = load_file(uploaded_file)
     if df is not None:
         result = analyze_performance(df)
 
-        # 📊 Кесте түрінде көрсету
-        st.write("📊 **Оқушылардың оқу жетістіктерін талдау:**")
-        st.dataframe(result)
+        # 📋 Кесте
+        st.success("✅ Файл сәтті талданды!")
+        st.subheader("📊 Оқушылар нәтижесі:")
+        st.dataframe(result, use_container_width=True)
 
-        # 📈 Дөңгелек диаграмма (Pie Chart)
-        st.subheader("📊 Орташа балл бойынша үлес диаграммасы")
-        fig, ax = plt.subplots()
-        colors = sns.color_palette("pastel")  # Түрлі түсті палитра
+        # 🎨 Дөңгелек диаграмма
+        st.subheader("📈 Орташа балл үлесі:")
+        fig, ax = plt.subplots(figsize=(5, 5))
+        colors = sns.color_palette("cool", len(result))
         score_counts = result['Орташа балл'].round(1).value_counts().sort_index()
-        
-        ax.pie(score_counts, labels=score_counts.index, autopct='%1.1f%%', colors=colors, startangle=140)
-        ax.set_title("Орташа балл үлесі")
+        ax.pie(score_counts, labels=score_counts.index, autopct='%1.1f%%', colors=colors, startangle=120)
+        ax.set_title("Орташа балл үлестері")
         st.pyplot(fig)
 
-        # 📥 Excel жүктеу батырмасы
+        # 💾 Excel жүктеу
         excel_data = download_excel(result)
-        st.download_button(label="📥 Excel форматында жүктеу",
-                           data=excel_data,
-                           file_name="recommendations.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button(
+            label="📥 Excel форматында жүктеу",
+            data=excel_data,
+            file_name="Оку_жетистик_талдау.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+else:
+    st.info("📄 Талдау үшін файлды жүктеңіз. CSV, Excel немесе JSON форматтары қолданылады.")
