@@ -7,7 +7,7 @@ import seaborn as sns
 from openpyxl import Workbook
 
 # 🌞 Беттің жалпы түрі (фон түсі және стиль)
-st.set_page_config(page_title="Оқу жетістіктерін талдау", page_icon="📚", layout="centered")
+st.set_page_config(page_title="Еркен Ерасыл ВЕБ публикация", page_icon="📚", layout="centered")
 
 # CSS арқылы әдемі дизайн беру
 st.markdown("""
@@ -122,3 +122,4 @@ if uploaded_file:
 
 else:
     st.info("📄 Талдау үшін файлды жүктеңіз. CSV, Excel немесе JSON форматтары қолданылады.")
+
